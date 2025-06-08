@@ -1,0 +1,52 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with sophisticated gradient -->
+  <defs>
+    <linearGradient id="mainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#34a853;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a73e8;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="3" dy="3" stdDeviation="3" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  
+  <!-- Main circle -->
+  <circle cx="64" cy="64" r="58" fill="url(#mainGradient)" stroke="#1a73e8" stroke-width="4" filter="url(#shadow)"/>
+  
+  <!-- Inner highlight circle -->
+  <circle cx="64" cy="64" r="52" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  
+  <!-- LTR block -->
+  <rect x="16" y="35" width="36" height="20" rx="6" fill="white" opacity="0.95" filter="url(#shadow)"/>
+  <text x="20" y="50" font-family="Arial, sans-serif" font-size="16" fill="#1a73e8" font-weight="bold">LTR</text>
+  
+  <!-- Transformation arrow with animation path -->
+  <path d="M54 45 Q64 25 74 45 Q84 65 94 45" stroke="white" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- Arrow head -->
+  <path d="M88 40 L94 45 L88 50 L92 45 Z" fill="white"/>
+  
+  <!-- AUTO block -->
+  <rect x="76" y="73" width="36" height="20" rx="6" fill="white" opacity="0.95" filter="url(#shadow)"/>
+  <text x="80" y="88" font-family="Arial, sans-serif" font-size="14" fill="#1a73e8" font-weight="bold">AUTO</text>
+  
+  <!-- Text direction examples -->
+  <g opacity="0.9">
+    <!-- Hebrew example -->
+    <rect x="20" y="100" width="24" height="12" rx="3" fill="rgba(255,255,255,0.8)"/>
+    <text x="22" y="108" font-family="Arial, sans-serif" font-size="8" fill="#34a853" font-weight="bold">שלום</text>
+    
+    <!-- English example -->
+    <rect x="84" y="100" width="24" height="12" rx="3" fill="rgba(255,255,255,0.8)"/>
+    <text x="86" y="108" font-family="Arial, sans-serif" font-size="8" fill="#34a853" font-weight="bold">Hello</text>
+    
+    <!-- Bidirectional arrow -->
+    <path d="M46 106 L82 106" stroke="white" stroke-width="2"/>
+    <path d="M48 104 L46 106 L48 108" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M80 104 L82 106 L80 108" stroke="white" stroke-width="2" fill="none"/>
+  </g>
+  
+  <!-- Small direction indicator -->
+  <circle cx="64" cy="20" r="8" fill="rgba(255,255,255,0.9)"/>
+  <text x="60" y="25" font-family="Arial, sans-serif" font-size="10" fill="#1a73e8" font-weight="bold">↔</text>
+</svg>
