@@ -1,20 +1,21 @@
-// Default to Auto Direction Changer - Popup Script
+// Default to Auto/RTL Direction Changer - Popup Script
 
 class PopupController {
   constructor() {
     this.toggleSwitch = null;
     this.status = null;
     this.currentUrl = null;
+    this.currentMode = 'auto';
     
     this.init();
   }
   
   async init() {
     try {
-      // חכה שה-DOM יטען לגמרי
+      // Wait for DOM to load completely
       await this.waitForDOM();
       
-      // קבל רפרנסים לאלמנטים
+      // Get references to elements
       this.toggleSwitch = document.getElementById('toggleSwitch');
       this.status = document.getElementById('status');
       this.currentUrl = document.getElementById('currentUrl');
@@ -23,8 +24,17 @@ class PopupController {
         throw new Error('Required DOM elements not found');
       }
       
-      // הגדרת event listeners
+      // Set up event listeners
       this.toggleSwitch.addEventListener('click', () => this.toggle());
+      
+      // Mode buttons
+      const autoModeBtn = document.getElementById('autoMode');
+      const rtlModeBtn = document.getElementById('rtlMode');
+      
+      if (autoModeBtn && rtlModeBtn) {
+        autoModeBtn.addEventListener('click', () => this.setMode('auto'));
+        rtlModeBtn.addEventListener('click', () => this.setMode('rtl'));
+      }
       
       // Custom selectors
       const saveBtn = document.getElementById('saveCustomSelectors');
@@ -33,19 +43,19 @@ class PopupController {
       if (saveBtn && customTextarea) {
         saveBtn.addEventListener('click', () => this.saveCustomSelectors());
         
-        // טעינת בוחרים מותאמים
+        // Load custom selectors
         await this.loadCustomSelectors();
       }
       
-      // קבלת המצב הנוכחי
+      // Get current status
       await this.updateStatus();
       
-      // הצגת URL הנוכחי
+      // Show current tab URL
       this.showCurrentTab();
       
     } catch (error) {
       console.error('Error initializing popup:', error);
-      this.showError('שגיאה באתחול הממשק: ' + error.message);
+      this.showError('Error initializing interface: ' + error.message);
     }
   }
   
@@ -69,12 +79,16 @@ class PopupController {
       });
       
       const isEnabled = response && response.enabled !== undefined ? response.enabled : true;
+      const mode = response && response.mode ? response.mode : 'auto';
+      
       this.setToggleState(isEnabled);
+      this.updateModeDisplay(mode);
       
     } catch (error) {
       console.log('Could not get status:', error);
-      // ברירת מחדל
+      // Default values
       this.setToggleState(true);
+      this.updateModeDisplay('auto');
     }
   }
   
@@ -92,19 +106,61 @@ class PopupController {
     } catch (error) {
       console.error('Error toggling extension:', error);
       
-      // אם אין content script, נציג הודעה למשתמש
-      this.showError('יש לרענן את הדף כדי שהתוסף יפעל');
+      // If no content script, show message to user
+      this.showError('Please refresh the page for the extension to work');
+    }
+  }
+  
+  async setMode(mode) {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs[0];
+      
+      await chrome.tabs.sendMessage(tab.id, { 
+        action: 'setMode',
+        mode: mode
+      });
+      
+      this.updateModeDisplay(mode);
+      
+    } catch (error) {
+      console.error('Error setting mode:', error);
+      this.showError('Please refresh the page for mode change to work');
+    }
+  }
+  
+  updateModeDisplay(mode) {
+    this.currentMode = mode;
+    
+    // Update button states
+    const autoBtn = document.getElementById('autoMode');
+    const rtlBtn = document.getElementById('rtlMode');
+    const description = document.getElementById('modeDescription');
+    
+    if (autoBtn && rtlBtn && description) {
+      // Reset button states
+      autoBtn.classList.remove('active');
+      rtlBtn.classList.remove('active');
+      
+      // Set active button
+      if (mode === 'auto') {
+        autoBtn.classList.add('active');
+        description.textContent = 'AUTO: Browser decides direction based on content';
+      } else if (mode === 'rtl') {
+        rtlBtn.classList.add('active');
+        description.textContent = 'RTL: Force right-to-left direction with right alignment';
+      }
     }
   }
   
   setToggleState(enabled) {
     if (enabled) {
       this.toggleSwitch.classList.add('active');
-      this.status.textContent = 'פעיל';
+      this.status.textContent = 'Active';
       this.status.className = 'status active';
     } else {
       this.toggleSwitch.classList.remove('active');
-      this.status.textContent = 'לא פעיל';
+      this.status.textContent = 'Inactive';
       this.status.className = 'status inactive';
     }
   }
@@ -116,7 +172,7 @@ class PopupController {
       const url = new URL(tab.url);
       this.currentUrl.textContent = url.hostname;
     } catch (error) {
-      this.currentUrl.textContent = 'לא זמין';
+      this.currentUrl.textContent = 'Not available';
     }
   }
   
@@ -147,7 +203,7 @@ class PopupController {
     try {
       await chrome.storage.local.set({ customSelectors: customSelectors });
       
-      // עדכון התוסף בכל הטאבים הפתוחים
+      // Update extension in all open tabs
       const tabs = await chrome.tabs.query({});
       for (const tab of tabs) {
         try {
@@ -156,11 +212,11 @@ class PopupController {
             customSelectors: customSelectors
           });
         } catch (e) {
-          // התעלם מטאבים שאין בהם content script
+          // Ignore tabs without content script
         }
       }
       
-      statusDiv.textContent = '✅ נשמר בהצלחה';
+      statusDiv.textContent = '✅ Saved successfully';
       statusDiv.style.color = '#155724';
       
       setTimeout(() => {
@@ -168,7 +224,7 @@ class PopupController {
       }, 2000);
       
     } catch (error) {
-      statusDiv.textContent = '❌ שגיאה בשמירה';
+      statusDiv.textContent = '❌ Save error';
       statusDiv.style.color = '#721c24';
       console.error('Error saving custom selectors:', error);
     }
@@ -197,18 +253,18 @@ class PopupController {
   }
 }
 
-// אתחול הממשק כשהדף נטען
+// Initialize interface when page loads
 document.addEventListener('DOMContentLoaded', () => {
   try {
     new PopupController();
   } catch (error) {
     console.error('Failed to initialize PopupController:', error);
-    // הצגת הודעת שגיאה למשתמש אם יש בעיה קריטית
+    // Show error message to user if there's a critical issue
     document.body.innerHTML = `
       <div style="padding: 20px; text-align: center; color: #721c24; background: #f8d7da; border-radius: 8px; margin: 10px;">
-        <h3>שגיאה באתחול התוסף</h3>
-        <p>אנא רענן את הדף או פתח מחדש את התוסף</p>
-        <small>שגיאה: ${error.message}</small>
+        <h3>Extension Initialization Error</h3>
+        <p>Please refresh the page or reopen the extension</p>
+        <small>Error: ${error.message}</small>
       </div>
     `;
   }

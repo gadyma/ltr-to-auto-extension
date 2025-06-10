@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LTR to Auto Direction</title>
+  <title>Direction Changer Extension</title>
   <style>
     body {
-      width: 300px;
+      width: 320px;
       padding: 20px;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
@@ -33,17 +33,17 @@
       margin: 5px 0 0 0;
     }
     
-    .toggle-section {
+    .control-section {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       padding: 15px;
       background: #f8f9fa;
       border-radius: 8px;
     }
     
-    .toggle-label {
+    .control-label {
       font-weight: 500;
       color: #333;
     }
@@ -77,6 +77,56 @@
     
     .toggle-switch.active::after {
       transform: translateX(26px);
+    }
+    
+    .mode-section {
+      margin-bottom: 15px;
+      padding: 15px;
+      background: #e8f4fd;
+      border-radius: 8px;
+      border-right: 4px solid #4285f4;
+    }
+    
+    .mode-section h3 {
+      margin: 0 0 10px 0;
+      color: #1a73e8;
+      font-size: 14px;
+    }
+    
+    .mode-options {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .mode-button {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid #4285f4;
+      background: white;
+      color: #4285f4;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    
+    .mode-button.active {
+      background: #4285f4;
+      color: white;
+    }
+    
+    .mode-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+    }
+    
+    .mode-description {
+      font-size: 11px;
+      color: #666;
+      margin-top: 8px;
+      text-align: center;
     }
     
     .info-section {
@@ -114,58 +164,128 @@
       background: #f8d7da;
       color: #721c24;
     }
+    
+    .custom-selectors-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .custom-selectors-section details {
+      cursor: pointer;
+    }
+    
+    .custom-selectors-section summary {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    
+    .custom-selectors-section label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    
+    .custom-selectors-section textarea {
+      width: 100%;
+      height: 60px;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 11px;
+      resize: vertical;
+      direction: ltr;
+      text-align: left;
+    }
+    
+    .save-btn {
+      background: linear-gradient(45deg, #4285f4, #34a853);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 11px;
+      transition: all 0.3s ease;
+      margin-top: 8px;
+    }
+    
+    .save-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 5px 15px rgba(66, 133, 244, 0.4);
+    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>🔄 שינוי כיוון טקסט</h1>
-    <p>Default → Auto Direction</p>
+    <h1>🔄 Direction Changer</h1>
+    <p>Smart Text Direction Control</p>
   </div>
   
-  <div class="toggle-section">
-    <span class="toggle-label">הפעל תוסף</span>
+  <div class="control-section">
+    <span class="control-label">Enable Extension</span>
     <div class="toggle-switch" id="toggleSwitch"></div>
   </div>
   
+  <div class="mode-section">
+    <h3>Direction Mode</h3>
+    <div class="mode-options">
+      <div class="mode-button" id="autoMode" data-mode="auto">
+        AUTO
+      </div>
+      <div class="mode-button" id="rtlMode" data-mode="rtl">
+        RTL + Right Align
+      </div>
+    </div>
+    <div class="mode-description" id="modeDescription">
+      AUTO: Browser decides direction based on content
+    </div>
+  </div>
+  
   <div class="info-section">
-    <strong>איך זה עובד:</strong><br>
-    התוסף מחפש שדות שברירת המחדל שלהם היא LTR (כמו שדות טקסט רגילים) 
-    ומשנה אותם ל-Auto, כך שהטקסט יוצג בכיוון הנכון בהתאם לתוכן.
+    <strong>How it works:</strong><br>
+    The extension finds fields with default LTR direction and changes them based on your selected mode for proper Hebrew/Arabic text display.
     <br><br>
     <details>
-      <summary><strong>סוגי שדות נתמכים (לחץ להרחבה)</strong></summary>
+      <summary><strong>Supported Field Types (click to expand)</strong></summary>
       <div style="margin-top: 10px; font-size: 11px; color: #555;">
-        ✅ שדות טקסט רגילים (input, textarea)<br>
-        ✅ שדות חיפוש ואימייל<br>
-        ✅ עורכי טקסט עשיר (Word, Google Docs)<br>
-        ✅ רשתות חברתיות (Twitter, Facebook)<br>
-        ✅ מערכות תגובות ופורומים<br>
-        ✅ אפליקציות צ'אט והודעות<br>
-        ✅ עורכי WordPress ו-CMS<br>
-        ✅ שירותי Google<br>
-        ✅ לקוחות דואר אלקטרוני
+        ✅ Regular text fields (input, textarea)<br>
+        ✅ Search and email fields<br>
+        ✅ Rich text editors (Word, Google Docs)<br>
+        ✅ Social media platforms (Twitter, Facebook)<br>
+        ✅ Comment systems and forums<br>
+        ✅ Chat and messaging apps<br>
+        ✅ WordPress and CMS editors<br>
+        ✅ Google services<br>
+        ✅ Email clients<br>
+        ✅ Custom application fields
       </div>
     </details>
   </div>
   
   <div class="stats">
-    <span class="status" id="status">לא פעיל</span>
+    <span class="status" id="status">Inactive</span>
     <span id="currentUrl"></span>
   </div>
   
-  <div class="custom-selectors-section" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-top: 1px solid #e0e0e0;">
+  <div class="custom-selectors-section">
     <details>
-      <summary style="cursor: pointer; font-weight: bold; color: #333; margin-bottom: 10px;">⚙️ הגדרות מתקדמות</summary>
+      <summary>⚙️ Advanced Settings</summary>
       <div style="margin-top: 10px;">
-        <label style="display: block; font-size: 12px; color: #666; margin-bottom: 5px;">
-          הוסף בוחרים מותאמים (CSS selectors):
+        <label>
+          Add custom CSS selectors:
         </label>
         <textarea id="customSelectors" 
-                  placeholder="דוגמה: .my-input, #special-field"
-                  style="width: 100%; height: 60px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 11px; resize: vertical; direction: ltr; text-align: left;"
+                  placeholder="Example: .my-input, #special-field"
         ></textarea>
-        <button id="saveCustomSelectors" class="download-btn" style="margin-top: 8px; padding: 6px 12px; font-size: 11px;">
-          שמור בוחרים
+        <button id="saveCustomSelectors" class="save-btn">
+          Save Selectors
         </button>
         <div id="customSelectorsStatus" style="margin-top: 5px; font-size: 10px;"></div>
       </div>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "LTR to Auto Direction Changer",
-  "version": "1.0",
-  "description": "משנה כיוון טקסט מ-LTR ל-Auto בשדות נבחרים באתרים",
+  "name": "Smart Direction Changer",
+  "version": "1.1",
+  "description": "Changes text direction in fields from default (LTR) to Auto or RTL for proper Hebrew/Arabic text display",
   "permissions": [
     "activeTab",
     "storage"
@@ -16,7 +16,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "RTL to Auto Direction"
+    "default_title": "Smart Direction Changer"
   },
   "icons": {
     "16": "icon16.png",
