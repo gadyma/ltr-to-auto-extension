@@ -1,4 +1,4 @@
-// Default to Auto/RTL Direction Changer - Popup Script
+// Smart Direction Changer with Domain Control - Popup Script
 
 class PopupController {
   constructor() {
@@ -6,6 +6,8 @@ class PopupController {
     this.status = null;
     this.currentUrl = null;
     this.currentMode = 'auto';
+    this.currentDomain = null;
+    this.domainEnabled = true;
     
     this.init();
   }
@@ -35,6 +37,27 @@ class PopupController {
         autoModeBtn.addEventListener('click', () => this.setMode('auto'));
         rtlModeBtn.addEventListener('click', () => this.setMode('rtl'));
       }
+
+      // Domain control buttons
+      const enableDomainBtn = document.getElementById('enableDomainBtn');
+      const disableDomainBtn = document.getElementById('disableDomainBtn');
+      
+      if (enableDomainBtn && disableDomainBtn) {
+        enableDomainBtn.addEventListener('click', () => this.setDomainEnabled(true));
+        disableDomainBtn.addEventListener('click', () => this.setDomainEnabled(false));
+      }
+
+      // Domain mode select
+      const domainModeSelect = document.getElementById('domainModeSelect');
+      if (domainModeSelect) {
+        domainModeSelect.addEventListener('change', () => this.setDomainMode(domainModeSelect.value));
+      }
+
+      // Clear domains button
+      const clearDomainsBtn = document.getElementById('clearDomainsBtn');
+      if (clearDomainsBtn) {
+        clearDomainsBtn.addEventListener('click', () => this.clearAllDomains());
+      }
       
       // Custom selectors
       const saveBtn = document.getElementById('saveCustomSelectors');
@@ -46,6 +69,9 @@ class PopupController {
         // Load custom selectors
         await this.loadCustomSelectors();
       }
+
+      // Load domain settings
+      await this.loadDomainSettings();
       
       // Get current status
       await this.updateStatus();
@@ -80,15 +106,225 @@ class PopupController {
       
       const isEnabled = response && response.enabled !== undefined ? response.enabled : true;
       const mode = response && response.mode ? response.mode : 'auto';
+      const domain = response && response.domain ? response.domain : 'unknown';
+      const domainEnabled = response && response.domainEnabled !== undefined ? response.domainEnabled : true;
+      
+      this.currentDomain = domain;
+      this.domainEnabled = domainEnabled;
       
       this.setToggleState(isEnabled);
       this.updateModeDisplay(mode);
+      this.updateDomainDisplay(domain, domainEnabled);
       
     } catch (error) {
       console.log('Could not get status:', error);
       // Default values
       this.setToggleState(true);
       this.updateModeDisplay('auto');
+      this.updateDomainDisplay('unknown', true);
+    }
+  }
+
+  updateDomainDisplay(domain, enabled) {
+    const domainSection = document.getElementById('domainSection');
+    const domainStatus = document.getElementById('domainStatus');
+    const currentDomainEl = document.getElementById('currentDomain');
+    const enableBtn = document.getElementById('enableDomainBtn');
+    const disableBtn = document.getElementById('disableDomainBtn');
+
+    if (domainSection && domainStatus && currentDomainEl && enableBtn && disableBtn) {
+      // Update domain info
+      currentDomainEl.textContent = domain;
+      
+      // Update section styling and status
+      domainSection.className = 'domain-section';
+      enableBtn.classList.remove('active');
+      disableBtn.classList.remove('active');
+      
+      if (enabled) {
+        domainSection.classList.add('enabled');
+        domainStatus.textContent = '✅ Enabled';
+        enableBtn.classList.add('active');
+      } else {
+        domainSection.classList.add('disabled');
+        domainStatus.textContent = '❌ Disabled';
+        disableBtn.classList.add('active');
+      }
+    }
+  }
+
+  async setDomainEnabled(enabled) {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tab = tabs[0];
+      
+      await chrome.tabs.sendMessage(tab.id, { 
+        action: 'setDomainEnabled',
+        enabled: enabled
+      });
+      
+      this.domainEnabled = enabled;
+      this.updateDomainDisplay(this.currentDomain, enabled);
+      
+      // Refresh domain list
+      await this.loadDomainSettings();
+      
+    } catch (error) {
+      console.error('Error setting domain status:', error);
+      this.showError('Please refresh the page for domain change to work');
+    }
+  }
+
+  async loadDomainSettings() {
+    try {
+      const result = await chrome.storage.local.get(['domainSettings', 'domainMode']);
+      let domainSettings = result.domainSettings;
+      let domainMode = result.domainMode;
+      
+      // Set defaults on first run
+      if (!domainSettings && !domainMode) {
+        domainSettings = {
+          '*.smartsuite.com': { enabled: true, timestamp: Date.now() },
+          '*.monday.com': { enabled: true, timestamp: Date.now() }
+        };
+        domainMode = 'custom';
+        
+        // Save defaults
+        await chrome.storage.local.set({ 
+          domainSettings: domainSettings,
+          domainMode: domainMode 
+        });
+        
+        console.log('Set default domain settings for smartsuite.com and monday.com');
+      }
+      
+      // Use defaults if still not set
+      domainSettings = domainSettings || {};
+      domainMode = domainMode || 'custom';
+      
+      // Update domain mode select
+      const domainModeSelect = document.getElementById('domainModeSelect');
+      if (domainModeSelect) {
+        domainModeSelect.value = domainMode;
+        
+        // Show/hide domain list based on mode
+        const domainListContainer = document.getElementById('domainListContainer');
+        if (domainListContainer) {
+          domainListContainer.style.display = domainMode === 'custom' ? 'block' : 'none';
+        }
+      }
+      
+      // Update domain list
+      this.updateDomainList(domainSettings);
+      
+    } catch (error) {
+      console.log('Could not load domain settings:', error);
+    }
+  }
+
+  updateDomainList(domainSettings) {
+    const domainList = document.getElementById('domainList');
+    if (!domainList) return;
+    
+    domainList.innerHTML = '';
+    
+    if (Object.keys(domainSettings).length === 0) {
+      domainList.innerHTML = '<div class="domain-item" style="justify-content: center; color: #666;">No domains configured</div>';
+      return;
+    }
+    
+    Object.entries(domainSettings).forEach(([domain, settings]) => {
+      const domainItem = document.createElement('div');
+      domainItem.className = 'domain-item';
+      
+      const domainName = document.createElement('span');
+      domainName.className = 'domain-name';
+      domainName.textContent = domain;
+      
+      const domainStatus = document.createElement('span');
+      domainStatus.className = `domain-status ${settings.enabled ? 'enabled' : 'disabled'}`;
+      domainStatus.textContent = settings.enabled ? 'Enabled' : 'Disabled';
+      
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'domain-remove';
+      removeBtn.innerHTML = '×';
+      removeBtn.title = 'Remove domain';
+      removeBtn.addEventListener('click', () => this.removeDomain(domain));
+      
+      domainItem.appendChild(domainName);
+      domainItem.appendChild(domainStatus);
+      domainItem.appendChild(removeBtn);
+      
+      domainList.appendChild(domainItem);
+    });
+  }
+
+  async setDomainMode(mode) {
+    try {
+      await chrome.storage.local.set({ domainMode: mode });
+      
+      // Show/hide domain list
+      const domainListContainer = document.getElementById('domainListContainer');
+      if (domainListContainer) {
+        domainListContainer.style.display = mode === 'custom' ? 'block' : 'none';
+      }
+      
+      // Notify all tabs of the change
+      const tabs = await chrome.tabs.query({});
+      for (const tab of tabs) {
+        try {
+          await chrome.tabs.sendMessage(tab.id, { action: 'getStatus' });
+        } catch (e) {
+          // Ignore tabs without content script
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error setting domain mode:', error);
+    }
+  }
+
+  async removeDomain(domain) {
+    try {
+      const result = await chrome.storage.local.get(['domainSettings']);
+      const domainSettings = result.domainSettings || {};
+      
+      delete domainSettings[domain];
+      
+      await chrome.storage.local.set({ domainSettings });
+      
+      // Update display
+      this.updateDomainList(domainSettings);
+      
+    } catch (error) {
+      console.error('Error removing domain:', error);
+    }
+  }
+
+  async clearAllDomains() {
+    if (confirm('Are you sure you want to clear all domain settings?')) {
+      try {
+        await chrome.storage.local.set({ 
+          domainSettings: {},
+          domainMode: 'allow-all'
+        });
+        
+        // Reset UI
+        const domainModeSelect = document.getElementById('domainModeSelect');
+        if (domainModeSelect) {
+          domainModeSelect.value = 'allow-all';
+        }
+        
+        const domainListContainer = document.getElementById('domainListContainer');
+        if (domainListContainer) {
+          domainListContainer.style.display = 'none';
+        }
+        
+        this.updateDomainList({});
+        
+      } catch (error) {
+        console.error('Error clearing domains:', error);
+      }
     }
   }
   
