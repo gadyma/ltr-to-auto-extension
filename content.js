@@ -430,19 +430,18 @@ class DirectionChanger {
     }
   }
 
-  setMode(newMode) {
+  async setMode(newMode) {
+    await this.checkDomainSettings(); // Always check latest domain status
     this.mode = newMode;
     chrome.storage.local.set({ mode: newMode });
-    
     if (this.enabled && this.domainEnabled) {
-      // First restore all elements
       this.restoreDirections();
-      // Then re-apply with new mode
       setTimeout(() => this.changeDirections(), 100);
     }
   }
 
   async setDomainEnabled(enabled) {
+    await this.checkDomainSettings(); // Always check latest domain status
     this.domainEnabled = enabled;
     
     // Update domain settings
@@ -473,9 +472,9 @@ class DirectionChanger {
     console.log(`Domain ${this.currentDomain} ${enabled ? 'enabled' : 'disabled'}`);
   }
 
-  toggle() {
+  async toggle() {
+    await this.checkDomainSettings(); // Always check latest domain status
     this.enabled = !this.enabled;
-    
     if (this.enabled && this.domainEnabled) {
       this.changeDirections();
       this.observeChanges();
@@ -485,41 +484,59 @@ class DirectionChanger {
         this.observer.disconnect();
       }
     }
-    
-    // Save state
     chrome.storage.local.set({ enabled: this.enabled });
   }
 }
 
-// Listen for messages from popup
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'toggle') {
-    directionChanger.toggle();
-    sendResponse({ enabled: directionChanger.enabled });
-  } else if (request.action === 'getStatus') {
-    sendResponse({ 
-      enabled: directionChanger.enabled,
-      mode: directionChanger.mode,
-      domain: directionChanger.currentDomain,
-      domainEnabled: directionChanger.domainEnabled
-    });
-  } else if (request.action === 'updateSelectors') {
-    // Update custom selectors
-    directionChanger.updateCustomSelectors(request.customSelectors);
-    sendResponse({ success: true });
-  } else if (request.action === 'setMode') {
-    // Set direction mode
-    directionChanger.setMode(request.mode);
-    sendResponse({ success: true, mode: request.mode });
-  } else if (request.action === 'setDomainEnabled') {
-    // Set domain enabled/disabled
-    directionChanger.setDomainEnabled(request.enabled);
-    sendResponse({ success: true, enabled: request.enabled });
-  }
-});
+// Smart Direction Changer Content Script
+console.log('Smart Direction Changer: Content script loading...');
 
-// Create instance
-const directionChanger = new DirectionChanger();
-
-// Log that extension loaded
-console.log('Smart Direction Changer loaded with domain control');
+try {
+  // Initialize the direction changer
+  const directionChanger = new DirectionChanger();
+  
+  // Listen for messages from popup
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    (async () => {
+      try {
+        console.log('Smart Direction Changer: Received message:', request.action);
+        
+        if (request.action === 'toggle') {
+          await directionChanger.toggle();
+          sendResponse({
+            enabled: directionChanger.enabled,
+            mode: directionChanger.mode,
+            domain: directionChanger.currentDomain,
+            domainEnabled: directionChanger.domainEnabled
+          });
+        } else if (request.action === 'getStatus') {
+          sendResponse({
+            enabled: directionChanger.enabled,
+            mode: directionChanger.mode,
+            domain: directionChanger.currentDomain,
+            domainEnabled: directionChanger.domainEnabled
+          });
+        } else if (request.action === 'updateSelectors') {
+          directionChanger.updateCustomSelectors(request.customSelectors);
+          sendResponse({ success: true });
+        } else if (request.action === 'setMode') {
+          await directionChanger.setMode(request.mode);
+          sendResponse({ success: true });
+        } else if (request.action === 'setDomainEnabled') {
+          await directionChanger.setDomainEnabled(request.enabled);
+          sendResponse({ success: true, enabled: request.enabled });
+        }
+      } catch (error) {
+        console.error('Smart Direction Changer: Error handling message:', error);
+        sendResponse({ error: error.message });
+      }
+    })();
+    // Return true to indicate async response
+    return true;
+  });
+  
+  console.log('Smart Direction Changer: Content script loaded successfully');
+  
+} catch (error) {
+  console.error('Smart Direction Changer: Failed to initialize:', error);
+}

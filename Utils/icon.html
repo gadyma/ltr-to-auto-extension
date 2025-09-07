@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Direction Changer Icon</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            font-family: 'Inter', sans-serif;
+        }
+        .icon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .icon-wrapper {
+            padding: 2rem;
+            background-color: #ffffff;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            margin-top: 1.5rem;
+            font-size: 1.5rem;
+            color: #333;
+        }
+    </style>
+    <!-- Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="icon-container">
+        <div class="icon-wrapper">
+            <!-- 
+                Icon for Smart Direction Changer (LTR-Auto)
+                This SVG is designed to be scalable and clear at various sizes,
+                which is ideal for a browser extension icon.
+            -->
+            <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="backgroundGradient" x1="0" y1="0" x2="128" y2="128">
+                        <stop offset="0%" stop-color="#4A90E2" />
+                        <stop offset="100%" stop-color="#50E3C2" />
+                    </linearGradient>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/>
+                    </filter>
+                </defs>
+
+                <!-- Background rounded square -->
+                <rect width="128" height="128" rx="28" fill="url(#backgroundGradient)"/>
+
+                <!-- Main icon elements group with shadow -->
+                <g filter="url(#shadow)">
+                    <!-- Right-to-Left Arrow -->
+                    <path d="M48 36 L24 64 L48 92" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                    
+                    <!-- Left-to-Right Arrow -->
+                    <path d="M80 36 L104 64 L80 92" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    <!-- Smart/Auto Gear Symbol -->
+                    <circle cx="64" cy="64" r="10" fill="white"/>
+                    <path d="M64 46 L64 50 M64 78 L64 82 M82 64 L78 64 M50 64 L46 64 M76.928 50.5 L74.072 52.5 M51.072 75.5 L48.216 77.5 M76.928 77.5 L74.072 75.5 M51.072 52.5 L48.216 50.5" stroke="white" stroke-width="6" stroke-linecap="round"/>
+                </g>
+            </svg>
+        </div>
+        <h1>Smart Direction Changer</h1>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon PNG Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-8 sm:p-12 rounded-2xl shadow-lg max-w-lg w-full text-center">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Smart Direction Changer Icon</h1>
+        <p class="text-gray-600 mb-8">Click the links below to download the icon in PNG format at the required sizes for your Chrome extension.</p>
+
+        <!-- The original SVG icon, hidden from view but used for conversion -->
+        <svg id="sourceIcon" width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg" class="hidden">
+            <defs>
+                <linearGradient id="backgroundGradient" x1="0" y1="0" x2="128" y2="128">
+                    <stop offset="0%" stop-color="#4A90E2" />
+                    <stop offset="100%" stop-color="#50E3C2" />
+                </linearGradient>
+                <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feDropShadow dx="2" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/>
+                </filter>
+            </defs>
+            <rect width="128" height="128" rx="28" fill="url(#backgroundGradient)"/>
+            <g filter="url(#shadow)">
+                <path d="M48 36 L24 64 L48 92" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M80 36 L104 64 L80 92" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="64" cy="64" r="10" fill="white"/>
+                <path d="M64 46 L64 50 M64 78 L64 82 M82 64 L78 64 M50 64 L46 64 M76.928 50.5 L74.072 52.5 M51.072 75.5 L48.216 77.5 M76.928 77.5 L74.072 75.5 M51.072 52.5 L48.216 50.5" stroke="white" stroke-width="6" stroke-linecap="round"/>
+            </g>
+        </svg>
+
+        <!-- Container for download links -->
+        <div id="downloadContainer" class="space-y-4">
+            <!-- Download links will be generated here by the script -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const svgElement = document.getElementById('sourceIcon');
+            const downloadContainer = document.getElementById('downloadContainer');
+            const sizes = [128, 48, 16];
+
+            // 1. Serialize the SVG element to a string
+            const serializer = new XMLSerializer();
+            const svgString = serializer.serializeToString(svgElement);
+
+            // 2. Create a base64 data URL from the SVG string
+            const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(svgString);
+
+            // 3. Create an Image object to load the SVG
+            const img = new Image();
+
+            img.onload = () => {
+                // 4. Once the image is loaded, generate a canvas and download link for each size
+                sizes.forEach(size => {
+                    // Create a canvas element
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+
+                    // Draw the loaded SVG image onto the canvas
+                    ctx.drawImage(img, 0, 0, size, size);
+
+                    // Create a download link
+                    const link = document.createElement('a');
+                    link.href = canvas.toDataURL('image/png'); // Convert canvas content to PNG data URL
+                    link.download = `icon-${size}x${size}.png`;
+                    link.className = 'block w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300';
+                    link.textContent = `Download ${size}x${size} PNG`;
+                    
+                    downloadContainer.appendChild(link);
+                });
+            };
+
+            // Set the image source to start the loading process
+            img.src = svgDataUrl;
+        });
+    </script>
+</body>
+</html>

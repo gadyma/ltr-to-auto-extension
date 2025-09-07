@@ -5,7 +5,11 @@
   "description": "Changes text direction in fields from default (LTR) to Auto or RTL for proper Hebrew/Arabic text display",
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
   ],
   "content_scripts": [
     {

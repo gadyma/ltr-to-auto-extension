@@ -100,9 +100,28 @@ class PopupController {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tab = tabs[0];
       
-      const response = await chrome.tabs.sendMessage(tab.id, { 
-        action: 'getStatus' 
-      });
+      // Check if this tab supports content scripts
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+        console.log('Tab does not support content scripts');
+        this.setToggleState(true);
+        this.updateModeDisplay('auto');
+        this.updateDomainDisplay('system page', false);
+        return;
+      }
+      
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, { 
+          action: 'getStatus' 
+        });
+      } catch (error) {
+        console.log('Content script not available during status update');
+        // Use default values when content script is not available
+        this.setToggleState(true);
+        this.updateModeDisplay('auto');
+        this.updateDomainDisplay('unknown', true);
+        return;
+      }
       
       const isEnabled = response && response.enabled !== undefined ? response.enabled : true;
       const mode = response && response.mode ? response.mode : 'auto';
@@ -158,16 +177,27 @@ class PopupController {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tab = tabs[0];
       
-      await chrome.tabs.sendMessage(tab.id, { 
-        action: 'setDomainEnabled',
-        enabled: enabled
-      });
+      // Check if this tab supports content scripts
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+        this.showError('Extension not available on system pages');
+        return;
+      }
       
-      this.domainEnabled = enabled;
-      this.updateDomainDisplay(this.currentDomain, enabled);
-      
-      // Refresh domain list
-      await this.loadDomainSettings();
+      try {
+        await chrome.tabs.sendMessage(tab.id, { 
+          action: 'setDomainEnabled',
+          enabled: enabled
+        });
+        
+        this.domainEnabled = enabled;
+        this.updateDomainDisplay(this.currentDomain, enabled);
+        
+        // Refresh domain list
+        await this.loadDomainSettings();
+      } catch (error) {
+        console.log('Content script not available for domain change');
+        this.showError('Please refresh the page for domain change to work');
+      }
       
     } catch (error) {
       console.error('Error setting domain status:', error);
@@ -333,17 +363,47 @@ class PopupController {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tab = tabs[0];
       
-      const response = await chrome.tabs.sendMessage(tab.id, { 
-        action: 'toggle' 
-      });
+      // Check if this tab supports content scripts
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+        this.showError('Extension not available on system pages (chrome://, chrome-extension://)');
+        return;
+      }
       
-      this.setToggleState(response.enabled);
+      // Check if content script is available
+      let response;
+      try {
+        response = await chrome.tabs.sendMessage(tab.id, { 
+          action: 'toggle' 
+        });
+      } catch (error) {
+        console.log('Content script not available, trying to inject...');
+        
+        // Try to inject content script
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+          });
+          
+          // Wait a bit and try again
+          await new Promise(resolve => setTimeout(resolve, 100));
+          response = await chrome.tabs.sendMessage(tab.id, { 
+            action: 'toggle' 
+          });
+        } catch (injectError) {
+          console.error('Failed to inject content script:', injectError);
+          this.showError('Extension not available on this page. Please refresh the page.');
+          return;
+        }
+      }
+      
+      if (response && response.enabled !== undefined) {
+        this.setToggleState(response.enabled);
+      }
       
     } catch (error) {
       console.error('Error toggling extension:', error);
-      
-      // If no content script, show message to user
-      this.showError('Please refresh the page for the extension to work');
+      this.showError('Could not toggle extension. Please refresh the page.');
     }
   }
   
@@ -352,16 +412,28 @@ class PopupController {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const tab = tabs[0];
       
-      await chrome.tabs.sendMessage(tab.id, { 
-        action: 'setMode',
-        mode: mode
-      });
+      // Check if this tab supports content scripts
+      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://') || tab.url.startsWith('moz-extension://')) {
+        this.showError('Extension not available on system pages');
+        return;
+      }
       
-      this.updateModeDisplay(mode);
+      try {
+        await chrome.tabs.sendMessage(tab.id, { 
+          action: 'setMode',
+          mode: mode
+        });
+        
+        this.currentMode = mode;
+        this.updateModeDisplay(mode);
+      } catch (error) {
+        console.log('Content script not available for mode change');
+        this.showError('Please refresh the page for mode change to work');
+      }
       
     } catch (error) {
       console.error('Error setting mode:', error);
-      this.showError('Please refresh the page for mode change to work');
+      this.showError('Could not change mode. Please refresh the page.');
     }
   }
   
@@ -441,19 +513,28 @@ class PopupController {
       
       // Update extension in all open tabs
       const tabs = await chrome.tabs.query({});
+      let successCount = 0;
+      
       for (const tab of tabs) {
         try {
           await chrome.tabs.sendMessage(tab.id, { 
             action: 'updateSelectors', 
             customSelectors: customSelectors
           });
+          successCount++;
         } catch (e) {
           // Ignore tabs without content script
+          console.log(`Tab ${tab.id} doesn't have content script`);
         }
       }
       
-      statusDiv.textContent = '✅ Saved successfully';
-      statusDiv.style.color = '#155724';
+      if (successCount > 0) {
+        statusDiv.textContent = `✅ Saved successfully (${successCount} tabs updated)`;
+        statusDiv.style.color = '#155724';
+      } else {
+        statusDiv.textContent = '⚠️ Saved to storage but no active tabs found';
+        statusDiv.style.color = '#ffc107';
+      }
       
       setTimeout(() => {
         statusDiv.textContent = '';
@@ -467,25 +548,62 @@ class PopupController {
   }
   
   showError(message) {
-    const errorDiv = document.createElement('div');
-    errorDiv.style.cssText = `
-      background: #f8d7da;
-      color: #721c24;
-      padding: 10px;
-      border-radius: 4px;
-      margin-top: 10px;
-      font-size: 12px;
-      text-align: center;
-    `;
+    // Create or find error display element
+    let errorDiv = document.getElementById('errorMessage');
+    if (!errorDiv) {
+      errorDiv = document.createElement('div');
+      errorDiv.id = 'errorMessage';
+      errorDiv.style.cssText = `
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        background: #f8d7da;
+        color: #721c24;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #f5c6cb;
+        z-index: 1000;
+        font-size: 12px;
+        text-align: center;
+      `;
+      document.body.appendChild(errorDiv);
+    }
+    
     errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
     
-    document.body.appendChild(errorDiv);
-    
+    // Hide after 3 seconds
     setTimeout(() => {
-      if (errorDiv.parentNode) {
-        errorDiv.parentNode.removeChild(errorDiv);
-      }
+      errorDiv.style.display = 'none';
     }, 3000);
+  }
+
+  async ensureContentScriptAvailable(tabId) {
+    try {
+      // Try to send a simple message to check if content script is available
+      await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+      return true;
+    } catch (error) {
+      console.log('Content script not available, attempting injection...');
+      
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content.js']
+        });
+        
+        // Wait a bit for the script to initialize
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Try again
+        await chrome.tabs.sendMessage(tabId, { action: 'ping' });
+        return true;
+      } catch (injectError) {
+        console.error('Failed to inject content script:', injectError);
+        return false;
+      }
+    }
   }
 }
 

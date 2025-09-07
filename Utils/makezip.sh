@@ -1,0 +1,1 @@
+zip -j smartdirectionChanger.zip ../*
